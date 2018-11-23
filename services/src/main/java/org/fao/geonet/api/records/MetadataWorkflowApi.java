@@ -23,16 +23,24 @@
 
 package org.fao.geonet.api.records;
 
-import io.swagger.annotations.*;
+import static org.fao.geonet.api.ApiParams.API_CLASS_RECORD_OPS;
+import static org.fao.geonet.api.ApiParams.API_CLASS_RECORD_TAG;
+import static org.fao.geonet.api.ApiParams.API_PARAM_RECORD_UUID;
+
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.fao.geonet.ApplicationContextHolder;
 import org.fao.geonet.api.API;
 import org.fao.geonet.api.ApiParams;
 import org.fao.geonet.api.ApiUtils;
 import org.fao.geonet.api.tools.i18n.LanguageUtils;
-import org.fao.geonet.domain.ISODate;
 import org.fao.geonet.domain.AbstractMetadata;
-import org.fao.geonet.kernel.AccessManager;
-import org.fao.geonet.kernel.DataManager;
+import org.fao.geonet.domain.ISODate;
+import org.fao.geonet.kernel.datamanager.IMetadataIndexer;
 import org.fao.geonet.kernel.metadata.StatusActions;
 import org.fao.geonet.kernel.metadata.StatusActionsFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,20 +52,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
-import jeeves.server.context.ServiceContext;
-import jeeves.services.ReadWriteController;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import static org.fao.geonet.api.ApiParams.API_CLASS_RECORD_OPS;
-import static org.fao.geonet.api.ApiParams.API_CLASS_RECORD_TAG;
-import static org.fao.geonet.api.ApiParams.API_PARAM_RECORD_UUID;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import jeeves.server.context.ServiceContext;
+import jeeves.services.ReadWriteController;
 
 @RequestMapping(value = {
     "/api/records",
@@ -73,7 +76,7 @@ public class MetadataWorkflowApi {
 
     @Autowired
     LanguageUtils languageUtils;
-
+    
 
     @ApiOperation(
         value = "Set record status",
@@ -120,13 +123,13 @@ public class MetadataWorkflowApi {
         ServiceContext context = ApiUtils.createServiceContext(request, locale.getISO3Language());
 
 
-        AccessManager am = appContext.getBean(AccessManager.class);
+//        AccessManager am = appContext.getBean(AccessManager.class);
         //--- only allow the owner of the record to set its status
-        if (!am.isOwner(context, String.valueOf(metadata.getId()))) {
-            throw new SecurityException(String.format(
-                "Only the owner of the metadata can set the status. User is not the owner of the metadata"
-            ));
-        }
+//        if (!am.isOwner(context, String.valueOf(metadata.getId()))) {
+//            throw new SecurityException(String.format(
+//                "Only the owner of the metadata can set the status. User is not the owner of the metadata"
+//            ));
+//        }
 
         ISODate changeDate = new ISODate();
 
@@ -142,7 +145,7 @@ public class MetadataWorkflowApi {
         sa.statusChange(String.valueOf(status), metadataIds, changeDate, comment);
 
         //--- reindex metadata
-        DataManager dataManager = appContext.getBean(DataManager.class);
+        IMetadataIndexer dataManager = appContext.getBean(IMetadataIndexer.class);
         dataManager.indexMetadata(String.valueOf(metadata.getId()), true, null);
     }
 }
