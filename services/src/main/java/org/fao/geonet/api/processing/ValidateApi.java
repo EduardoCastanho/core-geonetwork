@@ -130,24 +130,27 @@ public class ValidateApi {
 
             final IMetadataUtils metadataRepository = applicationContext.getBean(IMetadataUtils.class);
             for (String uuid : records) {
-                AbstractMetadata record = metadataRepository.findOneByUuid(uuid);
-                if (record == null) {
+                if (!metadataRepository.existsMetadataUuid(uuid)) {
                     report.incrementNullRecords();
-                } else if (!accessMan.canEdit(serviceContext, String.valueOf(record.getId()))) {
-                    report.addNotEditableMetadataId(record.getId());
-                } else {
-                    String idString = String.valueOf(record.getId());
-                    boolean isValid = dataMan.doValidate(record.getDataInfo().getSchemaId(),
-                        idString,
-                        new Document(record.getXmlData(false)),
-                        serviceContext.getLanguage());
-                    if (isValid) {
-                        report.addMetadataInfos(record.getId(), "Is valid");
-                    } else {
-                        report.addMetadataInfos(record.getId(), "Is invalid");
-                    }
-                    report.addMetadataId(record.getId());
-                    report.incrementProcessedRecords();
+                }
+                
+                for(AbstractMetadata record : metadataRepository.findAllByUuid(uuid)) {
+	                if (!accessMan.canEdit(serviceContext, String.valueOf(record.getId()))) {
+	                    report.addNotEditableMetadataId(record.getId());
+	                } else {
+	                    String idString = String.valueOf(record.getId());
+	                    boolean isValid = dataMan.doValidate(record.getDataInfo().getSchemaId(),
+	                        idString,
+	                        new Document(record.getXmlData(false)),
+	                        serviceContext.getLanguage());
+	                    if (isValid) {
+	                        report.addMetadataInfos(record.getId(), "Is valid");
+	                    } else {
+	                        report.addMetadataInfos(record.getId(), "Is invalid");
+	                    }
+	                    report.addMetadataId(record.getId());
+	                    report.incrementProcessedRecords();
+	                }
                 }
             }
 

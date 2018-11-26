@@ -43,10 +43,10 @@ import org.fao.geonet.kernel.DataManager;
 import org.fao.geonet.kernel.EditLib;
 import org.fao.geonet.kernel.SchemaManager;
 import org.fao.geonet.kernel.SelectionManager;
-import org.fao.geonet.kernel.datamanager.IMetadataUtils;
 import org.fao.geonet.kernel.schema.MetadataSchema;
 import org.fao.geonet.kernel.setting.SettingManager;
 import org.fao.geonet.kernel.setting.Settings;
+import org.fao.geonet.repository.MetadataRepository;
 import org.jdom.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -73,147 +73,108 @@ import io.swagger.annotations.ApiResponses;
 import jeeves.server.context.ServiceContext;
 import jeeves.services.ReadWriteController;
 
-@RequestMapping(value = {
-    "/api/records",
-    "/api/" + API.VERSION_0_1 +
-        "/records"
-})
-@Api(value = "records",
-    tags = "records",
-    description = "Metadata record editing operations")
+@RequestMapping(value = { "/api/records", "/api/" + API.VERSION_0_1 + "/records" })
+@Api(value = "records", tags = "records", description = "Metadata record editing operations")
 @Controller("records/edit")
 @ReadWriteController
 public class BatchEditsApi implements ApplicationContextAware {
-    @Autowired
-    SchemaManager _schemaManager;
-    private ApplicationContext context;
+	@Autowired
+	SchemaManager _schemaManager;
+	private ApplicationContext context;
 
-    public synchronized void setApplicationContext(ApplicationContext context) {
-        this.context = context;
-    }
+	public synchronized void setApplicationContext(ApplicationContext context) {
+		this.context = context;
+	}
 
+	/**
+	 * The service edits to the current selection or a set of uuids.
+	 */
+	@ApiOperation(value = "Edit a set of records by XPath expressions", nickname = "batchEdit")
+	@RequestMapping(value = "/batchediting", method = RequestMethod.PUT, produces = {
+			MediaType.APPLICATION_JSON_VALUE })
+	@ApiResponses(value = { @ApiResponse(code = 201, message = "Return a report of what has been done."),
+			@ApiResponse(code = 403, message = ApiParams.API_RESPONSE_NOT_ALLOWED_CAN_EDIT) })
+	@PreAuthorize("hasRole('Editor')")
+	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseBody
+	public IProcessingReport batchEdit(
+			@ApiParam(value = ApiParams.API_PARAM_RECORD_UUIDS_OR_SELECTION, required = false, example = "iso19139") @RequestParam(required = false) String[] uuids,
+			@ApiParam(value = ApiParams.API_PARAM_BUCKET_NAME, required = false) @RequestParam(required = false) String bucket,
+			@RequestBody BatchEditParameter[] edits, HttpServletRequest request) throws Exception {
 
-    /**
-     * The service edits to the current selection or a set of uuids.
-     */
-    @ApiOperation(value = "Edit a set of records by XPath expressions",
-        nickname = "batchEdit")
-    @RequestMapping(value = "/batchediting",
-        method = RequestMethod.PUT,
-        produces = {
-            MediaType.APPLICATION_JSON_VALUE
-        })
-    @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Return a report of what has been done."),
-        @ApiResponse(code = 403, message = ApiParams.API_RESPONSE_NOT_ALLOWED_CAN_EDIT)
-    })
-    @PreAuthorize("hasRole('Editor')")
-    @ResponseStatus(HttpStatus.CREATED)
-    @ResponseBody
-    public
-    IProcessingReport batchEdit(
-        @ApiParam(value = ApiParams.API_PARAM_RECORD_UUIDS_OR_SELECTION,
-            required = false,
-            example = "iso19139")
-        @RequestParam(required = false) String[] uuids,
-        @ApiParam(
-            value = ApiParams.API_PARAM_BUCKET_NAME,
-            required = false)
-        @RequestParam(
-            required = false
-        )
-            String bucket,
-        @RequestBody BatchEditParameter[] edits,
-        HttpServletRequest request)
-        throws Exception {
+		List<BatchEditParameter> listOfUpdates = Arrays.asList(edits);
+		if (listOfUpdates.size() == 0) {
+			throw new IllegalArgumentException("At least one edit must be defined.");
+		}
 
-        List<BatchEditParameter> listOfUpdates = Arrays.asList(edits);
-        if (listOfUpdates.size() == 0) {
-            throw new IllegalArgumentException("At least one edit must be defined.");
-        }
+		ServiceContext serviceContext = ApiUtils.createServiceContext(request);
+		final Set<String> setOfUuidsToEdit;
+		if (uuids == null) {
+			SelectionManager selectionManager = SelectionManager.getManager(serviceContext.getUserSession());
 
+			synchronized (selectionManager.getSelection(bucket)) {
+				final Set<String> selection = selectionManager.getSelection(bucket);
+				setOfUuidsToEdit = Sets.newHashSet(selection);
+			}
+		} else {
+			setOfUuidsToEdit = Sets.newHashSet(Arrays.asList(uuids));
+		}
 
-        ServiceContext serviceContext = ApiUtils.createServiceContext(request);
-        final Set<String> setOfUuidsToEdit;
-        if (uuids == null) {
-            SelectionManager selectionManager =
-                SelectionManager.getManager(serviceContext.getUserSession());
+		if (setOfUuidsToEdit.size() == 0) {
+			throw new IllegalArgumentException("At least one record should be defined or selected for updates.");
+		}
 
-            synchronized (
-                selectionManager.getSelection(bucket)) {
-                final Set<String> selection = selectionManager.getSelection(bucket);
-                setOfUuidsToEdit = Sets.newHashSet(selection);
-            }
-        } else {
-            setOfUuidsToEdit = Sets.newHashSet(Arrays.asList(uuids));
-        }
+		ConfigurableApplicationContext appContext = ApplicationContextHolder.get();
+		DataManager dataMan = appContext.getBean(DataManager.class);
+		SchemaManager _schemaManager = context.getBean(SchemaManager.class);
+		AccessManager accessMan = context.getBean(AccessManager.class);
+		final String settingId = Settings.SYSTEM_CSW_TRANSACTION_XPATH_UPDATE_CREATE_NEW_ELEMENTS;
+		boolean createXpathNodeIfNotExists = context.getBean(SettingManager.class).getValueAsBool(settingId);
 
-        if (setOfUuidsToEdit.size() == 0) {
-            throw new IllegalArgumentException("At least one record should be defined or selected for updates.");
-        }
+		SimpleMetadataProcessingReport report = new SimpleMetadataProcessingReport();
+		report.setTotalRecords(setOfUuidsToEdit.size());
 
-        ConfigurableApplicationContext appContext = ApplicationContextHolder.get();
-        DataManager dataMan = appContext.getBean(DataManager.class);
-        SchemaManager _schemaManager = context.getBean(SchemaManager.class);
-        AccessManager accessMan = context.getBean(AccessManager.class);
-        final String settingId = Settings.SYSTEM_CSW_TRANSACTION_XPATH_UPDATE_CREATE_NEW_ELEMENTS;
-        boolean createXpathNodeIfNotExists =
-            context.getBean(SettingManager.class).getValueAsBool(settingId);
+		String changeDate = null;
+		final MetadataRepository metadataRepository = context.getBean(MetadataRepository.class);
+		for (String recordUuid : setOfUuidsToEdit) {
+			AbstractMetadata record = metadataRepository.findOneByUuid(recordUuid);
+			if (record == null) {
+				report.incrementNullRecords();
+			} else if (!accessMan.isOwner(serviceContext, String.valueOf(record.getId()))) {
+				report.addNotEditableMetadataId(record.getId());
+			} else {
+				// Processing
+				try {
+					EditLib editLib = new EditLib(_schemaManager);
+					MetadataSchema metadataSchema = _schemaManager.getSchema(record.getDataInfo().getSchemaId());
+					Element metadata = record.getXmlData(false);
+					boolean metadataChanged = false;
 
+					Iterator<BatchEditParameter> listOfUpdatesIterator = listOfUpdates.iterator();
+					while (listOfUpdatesIterator.hasNext()) {
+						BatchEditParameter batchEditParameter = listOfUpdatesIterator.next();
 
-        SimpleMetadataProcessingReport report = new SimpleMetadataProcessingReport();
-        report.setTotalRecords(setOfUuidsToEdit.size());
+						AddElemValue propertyValue = new AddElemValue(batchEditParameter.getValue());
 
-        String changeDate = null;
-        final IMetadataUtils metadataRepository = context.getBean(IMetadataUtils.class);
-        for (String recordUuid : setOfUuidsToEdit) {
-            AbstractMetadata record = metadataRepository.findOneByUuid(recordUuid);
-            if (record == null) {
-                report.incrementNullRecords();
-            } else if (!accessMan.isOwner(serviceContext, String.valueOf(record.getId()))) {
-                report.addNotEditableMetadataId(record.getId());
-            } else {
-                // Processing
-                try {
-                    EditLib editLib = new EditLib(_schemaManager);
-                    MetadataSchema metadataSchema = _schemaManager.getSchema(record.getDataInfo().getSchemaId());
-                    Element metadata = record.getXmlData(false);
-                    boolean metadataChanged = false;
-
-                    Iterator<BatchEditParameter> listOfUpdatesIterator = listOfUpdates.iterator();
-                    while (listOfUpdatesIterator.hasNext()) {
-                        BatchEditParameter batchEditParameter =
-                            listOfUpdatesIterator.next();
-
-                        AddElemValue propertyValue =
-                            new AddElemValue(batchEditParameter.getValue());
-
-                        metadataChanged = editLib.addElementOrFragmentFromXpath(
-                            metadata,
-                            metadataSchema,
-                            batchEditParameter.getXpath(),
-                            propertyValue,
-                            createXpathNodeIfNotExists
-                        );
-                    }
-                    if (metadataChanged) {
-                        boolean validate = false;
-                        boolean ufo = false;
-                        boolean index = true;
-                        dataMan.updateMetadata(
-                            serviceContext, record.getId() + "", metadata,
-                            validate, ufo, index,
-                            "eng", // Not used when validate is false
-                            changeDate, false);
-                        report.addMetadataInfos(record.getId(), "Metadata updated.");
-                    }
-                } catch (Exception e) {
-                    report.addMetadataError(record.getId(), e);
-                }
-                report.incrementProcessedRecords();
-            }
-        }
-        report.close();
-        return report;
-    }
+						metadataChanged = editLib.addElementOrFragmentFromXpath(metadata, metadataSchema,
+								batchEditParameter.getXpath(), propertyValue, createXpathNodeIfNotExists);
+					}
+					if (metadataChanged) {
+						boolean validate = false;
+						boolean ufo = false;
+						boolean index = true;
+						dataMan.updateMetadata(serviceContext, record.getId() + "", metadata, validate, ufo, index,
+								"eng", // Not used when validate is false
+								changeDate, false);
+						report.addMetadataInfos(record.getId(), "Metadata updated.");
+					}
+				} catch (Exception e) {
+					report.addMetadataError(record.getId(), e);
+				}
+				report.incrementProcessedRecords();
+			}
+		}
+		report.close();
+		return report;
+	}
 }
