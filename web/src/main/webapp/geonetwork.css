@@ -988,22 +988,32 @@ div.thumbnail {
     text-align:center;
     vertical-align:middle;
     margin:2px;
+    object-fit: contain;
+    background-color: whitesmoke;
 }
 img.thumbnail {
     border: 1px solid #266397;
+  object-fit: contain;
+  background-color: whitesmoke;
  }
  img.thumbnail {
     width: 120px;
     height: auto;
+   object-fit: contain;
+   background-color: whitesmoke;
 }
 img.thumbnail {
     height: 120px;
     width: auto;
+  object-fit: contain;
+  background-color: whitesmoke;
 }
 span.thumbnail {
     font-size: small;
     font-style: italic;
     color: #2a628f;
+  object-fit: contain;
+  background-color: whitesmoke;
 }
 
 div.relatedElements {
@@ -1187,6 +1197,8 @@ div.thumbnail_results {
 	height: auto !important;
     text-align:center;
     vertical-align:middle;
+  object-fit: contain;
+  background-color: whitesmoke;
 }
 
 div.hitdescription {

@@ -57,7 +57,9 @@
               <div class="gn-md-thumbnail">
                 <img class="gn-img-thumbnail"
                      data-ng-src="{{md.getThumbnails().list[0].url}}"
-                     data-ng-if="md.getThumbnails().list[0].url"/>
+                     data-ng-if="md.getThumbnails().list[0].url"
+                     onError="this.src= 'http://'+window.location.host+'/geonetwork/catalog/views/default/images/no-thumbnail.png';"
+                />
               </div>
             </td>
             <td>

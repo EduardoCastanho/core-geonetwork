@@ -48,7 +48,7 @@
       'langDetector': {
         'fromHtmlTag': false,
         'regexp': '^\/.+\/.+\/([a-z]{3})\/',
-        'default': 'eng'
+        'default': 'por'
       },
       'nodeDetector': {
         'regexp': '^\/.+\/.+\/([a-z]{3})\/',
@@ -75,7 +75,8 @@
             'ita' : 'it',
             'rus': 'ru',
             'chi': 'zh',
-            'slo': 'sk'
+            'slo': 'sk',
+            'por': 'pt'
           }
         },
         'home': {
@@ -317,7 +318,7 @@
         }
         iso3lang = this.getIso3Lang(iso2lang || detector.default);
       }
-      this.current = iso3lang || 'eng';
+      this.current = iso3lang || 'por';
 
       // Set locale to global settings. This is
       // used by locale loader.
@@ -351,7 +352,7 @@
           return p;
         }
       }
-      return 'eng';
+      return 'por';
     }
   });
 
@@ -429,7 +430,7 @@
         'fre': 'Français', 'ger': 'Deutsch', 'kor': '한국의',
         'spa': 'Español', 'cat': 'Català', 'cze': 'Czech',
         'ita': 'Italiano', 'fin': 'Suomeksi', 'ice': 'Íslenska',
-        'rus': 'русский', 'chi': '中文', 'slo': 'Slovenčina'};
+        'rus': 'русский', 'chi': '中文', 'slo': 'Slovenčina','por':'Português'};
       $scope.url = '';
       $scope.gnUrl = gnGlobalSettings.gnUrl;
       $scope.gnCfg = gnGlobalSettings.gnCfg;

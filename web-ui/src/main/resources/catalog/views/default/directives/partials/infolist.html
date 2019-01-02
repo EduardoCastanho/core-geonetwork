@@ -1,40 +1,27 @@
-<ul class="row gn-info-list">
-  <li
-    data-ng-repeat="md in searchResults.records"
-    data-ng-click="openRecord($index, md, searchResults.records)"
-    data-ng-mouseenter="showMore(true)"
-    data-ng-mouseleave="showMore(false)"
-    id="gn-info-list-mw-{{md.getUuid()}}">
-    <section class="quickresultcard">
-      <div class="flip">
-        <div class="front">
-          <div class="top">
-            <div class="gn-md-thumbnail">
-              <img class="gn-img-thumbnail"
-                   data-ng-src="{{md.getThumbnails().list[0].url}}"
-                   data-ng-if="md.getThumbnails().list[0].url"/>
-            </div>
-          </div>
-          <div class="rigth">
-            <div class="header-card">
-              <div class="title">{{md.title || md.defaultTitle}}</div>
-              <div class="introduction">
-                <span data-ng-repeat="t in md.type">{{t | translate}}
-                <span data-ng-if="!$last">, </span>
-                </span>
-              </div>
-            </div>
-            <div class="content-card">
-              <div class="abstract">
-                {{md.abstract}}
-              </div>
-            </div>
-            <div class="footer-card">
-            </div>
-          </div>
+<div class="gn-info-list  row">
+
+  <div class="col-sm-6 col-md-3" data-ng-repeat="md in searchResults.records"
+       data-ng-click="openRecord($index, md, searchResults.records)" id="gn-info-list-mw-{{md.getUuid()}}">
+    <div class="thumbnail">
+      <img class="img-rounded " data-ng-src="{{md.getThumbnails().list[0].url}}"
+           data-ng-if="md.getThumbnails().list[0].url"
+           style="width: 15vw; height: 15vw; object-fit: contain;background-color: whitesmoke;"
+           onError="this.src= 'http://'+window.location.host+'/geonetwork/catalog/views/default/images/no-thumbnail.png';"/>
+      <div class="caption">
+        <h4 style=" overflow: hidden; text-overflow: ellipsis;height: 2em;">
+          {{md.title || md.defaultTitle}} </h4>
+        <p style="height: 6vw;overflow: hidden; text-overflow: ellipsis;">{{md.abstract | limitTo :
+          200}}{{md.abstract.length > 200 ? '...' : ''}}</p>
+
+        <div style=" overflow: hidden; white-space: nowrap; text-overflow: ellipsis;height: 2em;">
+        <small data-ng-repeat="t in md.type" >
+          <i class="fa gn-icon-{{t}}" title="{{t | translate}}"/>&nbsp;{{t|translate}}
+          <span data-ng-if="!$last">, </span></small>
         </div>
-        <div class="back"></div>
       </div>
-    </section>
-  </li>
-</ul>
+    </div>
+  </div>
+</div>
+
+
+

@@ -21,11 +21,11 @@
                alt="{{'siteLogo' | translate}}"
                data-ng-src="{{gnUrl}}../images/logos/{{info['system/site/siteId']}}.png?random{{info['system/site/lastUpdate']}}"/>
           </a>
-        <a class="gn-nopadding-left hidden-sm hidden-md pull-left" data-gn-active-tb-item="{{gnCfg.mods.home.appUrl}}">
-          <span class="gn-name" 
-                data-ng-class="authenticated && user.isEditorOrMore() ? 'gn-truncate' : ''"
-                title="{{info['system/site/name']}}">{{info['system/site/name']}}</span>
-        </a>
+        <!--<a class="gn-nopadding-left hidden-sm hidden-md pull-left" data-gn-active-tb-item="{{gnCfg.mods.home.appUrl}}">-->
+          <!--<span class="gn-name" -->
+                <!--data-ng-class="authenticated && user.isEditorOrMore() ? 'gn-truncate' : ''"-->
+                <!--title="{{info['system/site/name']}}">{{info['system/site/name']}}</span>-->
+        <!--</a>-->
       </li>
       <li data-ng-if="gnCfg.mods.search.enabled">
         <a data-gn-active-tb-item="{{gnCfg.mods.search.appUrl}}"

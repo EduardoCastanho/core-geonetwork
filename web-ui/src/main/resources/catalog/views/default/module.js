@@ -52,7 +52,7 @@
         params: {
           sortBy: 'popularity',
           from: 1,
-          to: 9
+          to: 8
         }
       };
     }]);

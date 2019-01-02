@@ -1,5 +1,26 @@
 <div class="">
-  <div gn-main-viewer=""
-       data-map="searchObj.viewerMap">
+  <div gn-main-viewer="" data-map="searchObj.viewerMap"></div>
+</div>
+<div id="gfi_modal" class="modal fade " tabindex="-1" role="dialog">
+  <div class="modal-dialog  modal-lg">
+    <div class="modal-content">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+        aria-hidden="true">&times;</span>
+      </button>
+      <div class="modal-body">
+        <img id="gfi_img" src="" style="width: 100%;" >
+      </div>
+    </div>
   </div>
 </div>
+
+
+<script>
+  function chimera_image(url) {
+
+    $('#gfi_img').attr('src', url);
+    $('#gfi_modal').modal('show')
+
+  }
+
+</script>
